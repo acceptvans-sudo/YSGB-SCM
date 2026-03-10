@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>逸仙生物科技 · SCM 供应链看板 2025</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
 :root{--bg:#f0f4fb;--card:#fff;--ink:#0f1c3f;--ink2:#2d3a5a;--muted:#6b7a99;--bdr:rgba(100,120,170,0.14);--blue:#1a5cff;--teal:#009680;--amb:#d97b00;--red:#d4182a;--grn:#0d8f5a;--pur:#6236e0}
@@ -84,6 +85,16 @@ tr.pl td{background:rgba(26,92,255,.03)}
 .cv.A{color:var(--amb)!important;font-style:normal}
 @keyframes fl{0%{background:rgba(26,92,255,.22)}100%{background:transparent}}
 .fld{animation:fl .5s ease}
+/* upload toolbar */
+.upbar{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:10px 16px;margin-bottom:18px;box-shadow:0 1px 4px rgba(26,60,140,.07);flex-wrap:wrap}
+.up-lbl{display:flex;align-items:center;gap:7px;padding:7px 16px;border-radius:8px;background:var(--blue);color:#fff;font:.72rem/1 'Microsoft YaHei','微软雅黑',sans-serif;font-weight:700;cursor:pointer;transition:all .18s;box-shadow:0 2px 8px rgba(26,92,255,.3)}
+.up-lbl:hover{background:#1248d6;box-shadow:0 4px 14px rgba(26,92,255,.4)}
+.up-lbl input{display:none}
+.up-hint{font:.65rem/1.4 'Microsoft YaHei','微软雅黑',sans-serif;color:var(--muted)}
+.up-status{font:.65rem/1 'Microsoft YaHei','微软雅黑',sans-serif;padding:5px 12px;border-radius:6px;transition:opacity .4s}
+.up-status.ok{color:var(--grn);background:rgba(13,143,90,.1)}
+.up-status.err{color:var(--red);background:rgba(212,24,42,.1)}
+.up-status.loading{color:var(--blue);background:rgba(26,92,255,.1)}
 @media(max-width:900px){.g2,.g3{grid-template-columns:1fr}.hd-l>h1{font-size:2.088rem}.tabs{flex-wrap:wrap}}
 </style>
 </head>
@@ -98,7 +109,7 @@ tr.pl td{background:rgba(26,92,255,.03)}
   </div>
   <div class="hd-r">
     <div class="yr">2025</div>
-    <div class="etip">✏️ 点击表格数值可直接编辑，图表实时更新</div>
+    <div class="etip">📂 上传 Excel 即可更新数据 · 支持直接点击编辑，图表实时更新</div>
   </div>
 </div>
 
@@ -109,6 +120,17 @@ tr.pl td{background:rgba(26,92,255,.03)}
   <button class="tb" onclick="showTab('purch',this)">📦 采购与TCR</button>
   <button class="tb" onclick="showTab('inv',this)">🏭 库存管理</button>
   <button class="tb" onclick="showTab('del',this)">🚚 交期与品质</button>
+</div>
+
+<!-- UPLOAD BAR -->
+<div class="upbar">
+  <label class="up-lbl">
+    📂 上传 Excel 更新数据
+    <input type="file" id="xlsxInput" accept=".xlsx,.xls" onchange="loadExcel(this)">
+  </label>
+  <button class="up-lbl" onclick="exportFile()" style="background:var(--teal);box-shadow:0 2px 8px rgba(0,150,128,.3)">⬇️ 导出原始表格</button>
+  <div class="up-hint">上传 SCM_2025年.xlsx 即可自动解析更新 · 导出还原原始文件</div>
+  <span class="up-status" id="up-status"></span>
 </div>
 
 <!-- ═══ 总览 ═══ -->
@@ -263,29 +285,26 @@ tr.pl td{background:rgba(26,92,255,.03)}
 <script>
 // ═══ DATA - 严格来自 YSGB 及 SCM_23年 表 ═══
 var D={
-  SP: [18000,14000,34000,38000,38000,33300,29500,25900,33300,37000,35000,34000],
-  SA: [29535,18975,25295,21325,29956,29947,27456,38697,44875,59101,32198,22801],
-  NP: [8000,6000,11000,12200,13000,10800,11450,10500,15000,15000,14050,14000],
-  NA: [11703,6881,9809,8955,12513,12946,11379,16639,18543,25927,13839,10692],
-  PP: [2272,1767,4291,4796,4796,4203,3723,3269,4203,4670,4418,4292],
-  PA: [3601,2780,3783,3442,4420,4640,3308,7292,9219,10735,6222,3444],
-  DEL:[0.95,0.90,0.92,0.97,1.00,1.00,0.97,1.00,1.00,1.00,1.00,1.00],
-  // 包材采购
-  PKG:[21347,22100,19600,16423,14497,8743,19214,27748,22444,13049,6637,16460],
-  QUAL:[95.57,98.34,96.80,96.80,96.80,98.23,98.35,98.11,97.34,98.52,98.90,98.41],
+  SP:[18000,14000,34000,38000,38000,33300,29500,25900,33300,37000,35000,34000],
+  SA:[29535.48912,18974.94031,25294.94316,21324.66403,29956.10883,29947.4645,27456.41034,38696.62326,44875,59101,32198,22801],
+  NP:[8000,6000,11000,12200,13000,10800,11450,10500,15000,15000,14050,14000],
+  NA:[11703.28469,6881.17307,9809.34833,8954.93233,12512.68297,12946.16363,11379.177,16638.56739,18543,25927,13839,10692],
+  PP:[2272,1767,4291,4796,4796,4203,3723,3269,4203,4670,4418,4292],
+  PA:[3601,2780,3783,3442,4420,4640,3308,7292,9219,10735,6222,3444],
+  DEL:[0.95,0.9,0.92,0.97,1,1,0.97,1,1,1,1,1],
+  PKG:[21347,22100,19600,16423,14497.38606,8742.68519,19214.40847,27747.81849,22443.50414,13048.65693,6636.96003,16460],
+  QUAL:[95.57,98.34,96.8,96.8,96.8,98.23,98.35,98.11,97.34,98.52,98.9,98.41],
   SUPD:[99.69,99.87,99.67,99.67,99.67,99.83,99.75,99.77,99.61,99.52,99.69,99.68],
-  // TCR
   TCR_T:[300,300,300,300,300,300,300,300,300,300,300,300],
-  TCR_DN:[130,134,248,154,168,201,208,262,276,256,189,216],
-  TCR_UP:[-3,-4,-10,-22,-25,-94,-30,-82,-75,-49,-34,-31],
+  TCR_UP:[-3,-4,-10,-22,-25.339054,-94,-30,-82,-75,-49,-34,-31],
+  TCR_DN:[130,134,248,154,167.872808,201,208,262,276,256,189,216],
   PT:[180,180,180,180,180,180,180,180,180,180,180,180],
-  PA2:[122,121,204,58,90,27,49,42,62,75,49,64],
+  PA2:[122,121,204,58,90.22482,27,49,42,62,75,49,64],
   RT:[120,120,120,120,120,120,120,120,120,120,120,120],
-  RA:[5,9,34,74,52,80,129,138,139,132,106,121],
-  // 库存
+  RA:[5,9,34,74,52.308934,80,129,138,139,132,106,121],
   IN:[1837,2072,1862,2369,2364,2273,2216,2622,3548,2208,2465,2319],
   IS:[275,353,317,283,354,395,339,196,201,217,229,235],
-  ID:[893,920,895,852,962,900,862,963,626,576,459,362],
+  ID:[893,920,895,852,962,900,862,963,626,576,459,362]
 };
 var MO=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 var CH={};
@@ -565,6 +584,170 @@ function refreshAll(){
     {label:'交期遵守率(%)',data:DELP,borderColor:'#6236e0',backgroundColor:'rgba(98,54,224,.08)',borderWidth:2.5,pointRadius:5,tension:.3,fill:true},
     {label:'目标95%',data:A12(95),borderColor:'rgba(13,143,90,.5)',borderDash:[5,3],borderWidth:1.5,pointRadius:0}
   ]);
+}
+
+// ═══ EXCEL UPLOAD & PARSE ═══
+function showUpStatus(msg,cls){
+  var el=document.getElementById('up-status');
+  el.textContent=msg; el.className='up-status '+cls;
+  if(cls!=='loading'){
+    clearTimeout(el._t);
+    el._t=setTimeout(function(){
+      el.style.opacity='0';
+      setTimeout(function(){el.textContent='';el.className='up-status';el.style.opacity='';},500);
+    },3500);
+  }
+}
+
+// Store original file for export
+var ORIGINAL_FILE = null;
+
+function loadExcel(input){
+  var file=input.files[0]; if(!file)return;
+  ORIGINAL_FILE = file;
+  showUpStatus('⏳ 解析中...','loading');
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      // cellNF:false, raw:true — preserves numeric values as-is, reads formula cache
+      var wb=XLSX.read(e.target.result,{type:'array',cellFormula:false,cellNF:false,cellDates:false,raw:true});
+      var ws=wb.Sheets['YSGB'];
+      if(!ws){showUpStatus('❌ 未找到 YSGB 工作表','err');return;}
+      var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
+      parseYSGB(rows);
+      refreshAll();
+      showUpStatus('✅ 数据更新成功！','ok');
+    }catch(err){
+      showUpStatus('❌ 解析失败：'+err.message,'err');
+      console.error(err);
+    }
+    input.value='';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// Convert raw cell value: null/0/error string → null, else number
+function nv(v){
+  if(v===null||v===undefined||v==='')return null;
+  if(typeof v==='string'&&(v.indexOf('#')===0))return null;
+  var n=parseFloat(v);
+  return isNaN(n)?null:n;
+}
+
+// Extract cols 6-17 (1月~12月) from a row, treating 0 as null for actual data
+function rd(row, zeroAsNull){
+  // SheetJS indexes from B=0 (sheet !ref starts at B1), so:
+  // G(1月)=5, H(2月)=6, I(3月)=7 ... R(12月)=16
+  var arr=[];
+  for(var i=5;i<=16;i++){
+    var v=nv(row[i]);
+    if(zeroAsNull && v===0) v=null;
+    arr.push(v);
+  }
+  return arr;
+}
+
+// Parse YSGB by fixed row index (0-based, matching the Excel structure)
+function parseYSGB(rows){
+  // ROW MAP (0-based):
+  // 4  = 事业计划销售额 (SP)
+  // 5  = 销售额实绩 (SA)
+  // 7  = 事业计划纯销售 (NP)
+  // 8  = 纯销售额实绩 (NA)
+  // 10 = 事业计划生产量 (PP)
+  // 11 = 生产数量 (PA)
+  // 13 = 交期遵守率 (DEL) - values 0~1
+  // 14 = 包材采购金额 (PKG)
+  // 16 = 供应商品质达成率 (QUAL) - values 0~1
+  // 17 = 供应商交期遵守率 (SUPD) - values 0~1
+  // 18 = TCR目标 (TCR_T)
+  // 19 = TCR涨价 (TCR_UP)
+  // 20 = TCR降价 (TCR_DN)
+  // 23 = 包材TCR目标 (PT)
+  // 25 = 包材TCR降价 (PA2 used as 实绩 - row 26)
+  // 26 = 包材TCR实绩 (PA2)
+  // 28 = 原料TCR目标 (RT)
+  // 30 = 原料TCR降价
+  // 31 = 原料TCR实绩 (RA)
+  // 33 = 正常库存 (IN)
+  // 34 = 不进库存 (IS)
+  // 35 = 不动库存 (ID)
+
+  function getRow(idx){ return rows[idx]||[]; }
+
+  // Sales plan - cols 6-17, plan is always filled so 0 stays 0
+  D.SP = rd(getRow(4), false);
+  // Sales actual - 0 means no data
+  D.SA = rd(getRow(5), true);
+  // Pure sales plan
+  D.NP = rd(getRow(7), false);
+  // Pure sales actual
+  D.NA = rd(getRow(8), true);
+  // Production plan
+  D.PP = rd(getRow(10), false);
+  // Production actual
+  D.PA = rd(getRow(11), true);
+
+  // Delivery rate: raw 0~1, convert to 0~100, 0→null for actual
+  var delRaw = rd(getRow(13), true);
+  D.DEL = delRaw.map(function(v){
+    if(v===null) return null;
+    return v <= 1 ? v : v/100;  // keep as 0~1 for internal use
+  });
+
+  // Package procurement amount
+  D.PKG = rd(getRow(14), true);
+
+  // Quality: raw 0~1 → multiply by 100 for display
+  var qualRaw = rd(getRow(16), true);
+  D.QUAL = qualRaw.map(function(v){ return v===null?null:(v<=1?v*100:v); });
+
+  // Supplier delivery: raw 0~1 → ×100
+  var supdRaw = rd(getRow(17), true);
+  D.SUPD = supdRaw.map(function(v){ return v===null?null:(v<=1?v*100:v); });
+
+  // TCR rows — some cols use SUM formulas; read source rows and compute directly
+  // 包材TCR: row23=目标, row24=涨价, row25=降价, row26=实绩(=row25+row24)
+  D.PT  = rd(getRow(23), true);                             // 包材TCR目标
+  var pkgDN = rd(getRow(25), false);                        // 包材TCR降价
+  var pkgUP = rd(getRow(24), false);                        // 包材TCR涨价
+  D.PA2 = pkgDN.map(function(v,i){                          // 包材TCR实绩
+    var u=pkgUP[i]||0; return (v||0)+u || null;
+  });
+
+  // 原料TCR: row28=目标, row29=涨价, row30=降价, row31=实绩
+  D.RT  = rd(getRow(28), true);                             // 原料TCR目标
+  var rawDN = rd(getRow(30), false);                        // 原料TCR降价
+  var rawUP = rd(getRow(29), false);                        // 原料TCR涨价
+  D.RA  = rawDN.map(function(v,i){                          // 原料TCR实绩
+    var u=rawUP[i]||0; return (v||0)+u || null;
+  });
+
+  // 总TCR = 包材 + 原料
+  D.TCR_T  = D.PT.map(function(v,i){  return (v||0)+(D.RT[i]||0)||null; });
+  D.TCR_UP = pkgUP.map(function(v,i){ return (v||0)+(rawUP[i]||0)||null; });
+  D.TCR_DN = pkgDN.map(function(v,i){ return (v||0)+(rawDN[i]||0)||null; });
+
+  // 正常库存 (row 33)
+  D.IN = rd(getRow(33), true);
+  // 不进库存 (row 34)
+  D.IS = rd(getRow(34), true);
+  // 不动库存 (row 35)
+  D.ID = rd(getRow(35), true);
+}
+
+// ═══ EXPORT ORIGINAL FILE ═══
+function exportFile(){
+  if(!ORIGINAL_FILE){
+    showUpStatus('⚠️ 请先上传 Excel 文件','err');
+    return;
+  }
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(ORIGINAL_FILE);
+  a.download=ORIGINAL_FILE.name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showUpStatus('✅ 文件已导出','ok');
 }
 
 // ═══ TAB ═══
