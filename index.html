@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>逸仙生物科技 · SCM 供应链看板 2025</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<style>
+:root{--bg:#f0f4fb;--card:#fff;--ink:#0f1c3f;--ink2:#2d3a5a;--muted:#6b7a99;--bdr:rgba(100,120,170,0.14);--blue:#1a5cff;--teal:#009680;--amb:#d97b00;--red:#d4182a;--grn:#0d8f5a;--pur:#6236e0}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:'Microsoft YaHei','微软雅黑',sans-serif;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:radial-gradient(rgba(26,92,255,.07) 1px,transparent 1px);background-size:28px 28px}
+body::after{content:'';position:fixed;top:0;left:0;right:0;height:3px;z-index:99;background:linear-gradient(90deg,var(--blue),var(--pur),var(--teal))}
+.w{position:relative;z-index:1;max-width:1520px;margin:0 auto;padding:24px 20px 60px}
+/* header */
+.hd{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:20px;margin-bottom:24px;border-bottom:1px solid var(--bdr);gap:20px}
+.hd-l>.eye{font:500 .55rem/1 'Microsoft YaHei','微软雅黑',sans-serif;letter-spacing:4px;text-transform:uppercase;color:var(--blue);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.hd-l>.eye::before{content:'';width:20px;height:1.5px;background:var(--blue)}
+.hd-l>h1{font-size:2rem;font-weight:800;letter-spacing:-1px;line-height:1.1;background:linear-gradient(135deg,#0f1c3f,#1a5cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hd-sub{margin-top:8px;font:.6rem/1.6 'Microsoft YaHei','微软雅黑',sans-serif;color:var(--muted);display:flex;align-items:center;gap:8px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--grn);box-shadow:0 0 0 3px rgba(13,143,90,.18);animation:p 2s infinite;flex-shrink:0}
+@keyframes p{0%,100%{box-shadow:0 0 0 3px rgba(13,143,90,.18)}50%{box-shadow:0 0 0 8px rgba(13,143,90,.04)}}
+.hd-r{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.yr{font:700 2.366rem/1 'Microsoft YaHei','微软雅黑',sans-serif;color:var(--blue);letter-spacing:-1px}
+.etip{font:.56rem/1 'Microsoft YaHei','微软雅黑',sans-serif;color:var(--blue);background:rgba(26,92,255,.08);border:1px solid rgba(26,92,255,.2);border-radius:6px;padding:5px 10px}
+/* tabs */
+.tabs{display:flex;gap:3px;background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:4px;width:fit-content;margin-bottom:24px;box-shadow:0 1px 4px rgba(26,60,140,.07)}
+.tb{padding:8px 18px;font:.75rem/1 'Microsoft YaHei','微软雅黑',sans-serif;font-weight:600;color:var(--muted);cursor:pointer;border-radius:7px;border:none;background:none;transition:all .2s;white-space:nowrap}
+.tb.on{background:var(--blue);color:#fff;box-shadow:0 2px 10px rgba(26,92,255,.35)}
+.tb:hover:not(.on){background:rgba(26,92,255,.06);color:var(--ink)}
+.pane{display:none}.pane.on{display:block;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+/* section title */
+.sec{font:.55rem/1 'Microsoft YaHei','微软雅黑',sans-serif;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin:24px 0 12px;display:flex;align-items:center;gap:10px}
+.sec b{color:var(--blue)}
+.sec::after{content:'';flex:1;height:1px;background:var(--bdr)}
+/* ribbon */
+.rib{background:linear-gradient(135deg,#eef4ff,#f0f8f4);border:1px solid var(--bdr);border-radius:12px;padding:13px 20px;margin-bottom:18px;display:flex;gap:20px;align-items:center;flex-wrap:wrap;box-shadow:0 1px 4px rgba(26,60,140,.07)}
+.ri{display:flex;flex-direction:column;gap:3px}
+.rl{font:.53rem/1 'Microsoft YaHei','微软雅黑',sans-serif;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.rv{font:.9rem/1 'Microsoft YaHei','微软雅黑',sans-serif;font-weight:700;color:var(--ink)}
+.rs{width:1px;height:32px;background:var(--bdr);flex-shrink:0}
+/* KPI cards */
+.kr{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px}
+.kc{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;box-shadow:0 1px 4px rgba(26,60,140,.07);transition:transform .2s}
+.kc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--ac,var(--blue))}
+.kc:hover{transform:translateY(-2px)}
+.ki{font-size:1rem;margin-bottom:10px;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--ac,var(--blue)) 10%,transparent)}
+.kl{font:.54rem/1 'Microsoft YaHei','微软雅黑',sans-serif;letter-spacing:1.8px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.kv{font-size:2.434rem;font-weight:800;letter-spacing:-1px;color:var(--ink);line-height:1;margin-bottom:5px}
+.kv small{font-size:.65rem;color:var(--muted);font-weight:400;letter-spacing:0}
+.ks{font:.62rem/1.45 'Microsoft YaHei','微软雅黑',sans-serif;color:var(--muted);margin-bottom:8px}
+.bx{display:inline-flex;align-items:center;font:.58rem/1 'Microsoft YaHei','微软雅黑',sans-serif;font-weight:600;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.bx.g{background:rgba(13,143,90,.12);color:var(--grn)}
+.bx.r{background:rgba(212,24,42,.1);color:var(--red)}
+.bx.a{background:rgba(217,123,0,.12);color:var(--amb)}
+.bx.b{background:rgba(26,92,255,.1);color:var(--blue)}
+/* grid */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+/* chart card */
+.cc{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:18px;box-shadow:0 1px 4px rgba(26,60,140,.07)}
+.ct{font:.55rem/1 'Microsoft YaHei','微软雅黑',sans-serif;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.cc canvas{max-height:235px}
+/* table */
+.tw{overflow-x:auto;border-radius:10px;border:1px solid var(--bdr);margin-bottom:10px;box-shadow:0 1px 4px rgba(26,60,140,.07)}
+table{width:100%;border-collapse:collapse;font-size:.72rem}
+thead th{padding:9px 10px;font:.5rem/1 'Microsoft YaHei','微软雅黑',sans-serif;letter-spacing:2px;text-transform:uppercase;color:var(--muted);background:#eef2fa;border-bottom:1px solid var(--bdr);text-align:right;white-space:nowrap}
+thead th:first-child{text-align:left}
+tbody tr{border-bottom:1px solid rgba(100,120,170,.07)}
+tbody tr:last-child{border-bottom:none}
+tbody td{padding:0;text-align:right;white-space:nowrap}
+tbody td:first-child{padding:8px 10px;text-align:left;font:.73rem/1.3 'Microsoft YaHei','微软雅黑',sans-serif;font-weight:600;color:var(--ink)}
+tr.pl td{background:rgba(26,92,255,.03)}
+/* editable cell span */
+.ev{display:block;width:100%;padding:8px 10px;text-align:right;font:.69rem/1 'Microsoft YaHei','微软雅黑',sans-serif;color:var(--ink2);outline:none;cursor:text;border-radius:3px;transition:background .12s,color .12s,box-shadow .12s}
+.ev:hover{background:rgba(26,92,255,.07);color:var(--ink)}
+.ev:focus{background:rgba(26,92,255,.11);color:var(--blue);box-shadow:inset 0 0 0 1.5px rgba(26,92,255,.4)}
+/* computed cell */
+.cv{display:block;width:100%;padding:8px 10px;text-align:right;font:.69rem/1 'Microsoft YaHei','微软雅黑',sans-serif;color:var(--muted);font-style:italic}
+.cv.G{color:var(--grn)!important;font-style:normal}
+.cv.R{color:var(--red)!important;font-style:normal}
+.cv.A{color:var(--amb)!important;font-style:normal}
+@keyframes fl{0%{background:rgba(26,92,255,.22)}100%{background:transparent}}
+.fld{animation:fl .5s ease}
+@media(max-width:900px){.g2,.g3{grid-template-columns:1fr}.hd-l>h1{font-size:2.088rem}.tabs{flex-wrap:wrap}}
+</style>
+</head>
+<body><div class="w">
+
+<!-- HEADER -->
+<div class="hd">
+  <div class="hd-l">
+    <div class="eye">逸仙生物科技 · SCM 供应链看板</div>
+    <h1>2025年<br>供应链管理年报</h1>
+    <div class="hd-sub"><span class="dot"></span>单位：千元 / 千个 / %</div>
+  </div>
+  <div class="hd-r">
+    <div class="yr">2025</div>
+    <div class="etip">✏️ 点击表格数值可直接编辑，图表实时更新</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tb on" onclick="showTab('ov',this)">📊 总览</button>
+  <button class="tb" onclick="showTab('sales',this)">💰 销售与生产</button>
+  <button class="tb" onclick="showTab('purch',this)">📦 采购与TCR</button>
+  <button class="tb" onclick="showTab('inv',this)">🏭 库存管理</button>
+  <button class="tb" onclick="showTab('del',this)">🚚 交期与品质</button>
+</div>
+
+<!-- ═══ 总览 ═══ -->
+<div class="pane on" id="tab-ov">
+  <div class="rib">
+    <div class="ri"><div class="rl">年度销售计划</div><div class="rv" id="r-sp">—</div></div><div class="rs"></div>
+    <div class="ri"><div class="rl">年度销售实绩</div><div class="rv" id="r-sa">—</div></div><div class="rs"></div>
+    <div class="ri"><div class="rl">销售达成率</div><div class="rv" id="r-sr">—</div></div><div class="rs"></div>
+    <div class="ri"><div class="rl">纯销售达成率</div><div class="rv" id="r-nr">—</div></div><div class="rs"></div>
+    <div class="ri"><div class="rl">生产量达成率</div><div class="rv" id="r-pr">—</div></div><div class="rs"></div>
+    <div class="ri"><div class="rl">TCR净削减</div><div class="rv" id="r-tcr">—</div></div><div class="rs"></div>
+    <div class="ri"><div class="rl">包材采购总额</div><div class="rv" id="r-pkg">—</div></div>
+  </div>
+  <div class="kr">
+    <div class="kc" style="--ac:var(--blue)"><div class="ki">💰</div><div class="kl">全年销售实绩</div><div class="kv" id="kv-sa">—</div><div class="ks" id="ks-sa">—</div><span class="bx" id="kb-sr">—</span></div>
+    <div class="kc" style="--ac:var(--teal)"><div class="ki">💎</div><div class="kl">全年纯销售实绩</div><div class="kv" id="kv-na">—</div><div class="ks" id="ks-na">—</div><span class="bx" id="kb-nr">—</span></div>
+    <div class="kc" style="--ac:var(--pur)"><div class="ki">🏭</div><div class="kl">全年生产实绩</div><div class="kv" id="kv-pa">—</div><div class="ks" id="ks-pa">—</div><span class="bx" id="kb-pr">—</span></div>
+    <div class="kc" style="--ac:var(--amb)"><div class="ki">📦</div><div class="kl">包材采购总额</div><div class="kv" id="kv-pkg">—</div><div class="ks" id="ks-pkg">—</div><span class="bx a">比重需管控</span></div>
+    <div class="kc" style="--ac:var(--grn)"><div class="ki">✅</div><div class="kl">供应商交期遵守率 年均</div><div class="kv" id="kv-supd">—</div><div class="ks">全年月均</div><span class="bx g">▲ 优秀达成</span></div>
+    <div class="kc" style="--ac:var(--red)"><div class="ki">📉</div><div class="kl">TCR 净实绩 全年</div><div class="kv" id="kv-tcr">—</div><div class="ks" id="ks-tcr">—</div><span class="bx" id="kb-tcr">—</span></div>
+  </div>
+  <div class="sec"><b>全年</b> 销售趋势总览</div>
+  <div class="cc" style="margin-bottom:10px"><div class="ct">月度销售额：计划 vs 实绩（千元）<span class="bx b" id="ov-badge" style="font-size:.52rem">—</span></div><canvas id="c-sm" style="max-height:210px"></canvas></div>
+  <div class="g3">
+    <div class="cc"><div class="ct">月度达成率趋势（%）</div><canvas id="c-ar"></canvas></div>
+    <div class="cc"><div class="ct">生产量：计划 vs 实绩（千个）</div><canvas id="c-pm"></canvas></div>
+    <div class="cc"><div class="ct">不进不动比重趋势（%）</div><canvas id="c-io"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══ 销售与生产 ═══ -->
+<div class="pane" id="tab-sales">
+  <div class="kr">
+    <div class="kc" style="--ac:var(--grn)"><div class="ki">📈</div><div class="kl">最高达成月（销售额）</div><div class="kv" id="km-hi">—</div><div class="ks" id="ks-hi">—</div><span class="bx g" id="kb-hi">—</span></div>
+    <div class="kc" style="--ac:var(--red)"><div class="ki">📉</div><div class="kl">最低达成月（销售额）</div><div class="kv" id="km-lo">—</div><div class="ks" id="ks-lo">—</div><span class="bx r" id="kb-lo">—</span></div>
+    <div class="kc" style="--ac:var(--teal)"><div class="ki">💎</div><div class="kl">最高纯销售达成月</div><div class="kv" id="km-nhi">—</div><div class="ks" id="ks-nhi">—</div><span class="bx g" id="kb-nhi">—</span></div>
+    <div class="kc" style="--ac:var(--pur)"><div class="ki">🏭</div><div class="kl">最高生产达成月</div><div class="kv" id="km-phi">—</div><div class="ks" id="ks-phi">—</div><span class="bx g" id="kb-phi">—</span></div>
+  </div>
+  <div class="sec"><b>月度</b> 销售与生产明细 &nbsp;<small style="color:var(--amb);font-size:.6rem;letter-spacing:0;text-transform:none">▸ 点击数值可直接编辑</small></div>
+  <div class="tw"><table id="T-sales">
+    <thead><tr><th>指标</th><th>1月</th><th>2月</th><th>3月</th><th>4月</th><th>5月</th><th>6月</th><th>7月</th><th>8月</th><th>9月</th><th>10月</th><th>11月</th><th>12月</th><th>全年</th><th>月均</th></tr></thead>
+    <tbody>
+      <tr class="pl"><td>销售额计划（千元）</td></tr>
+      <tr><td>销售额实绩（千元）</td></tr>
+      <tr><td>销售额达成率</td></tr>
+      <tr class="pl"><td>纯销售计划（千元）</td></tr>
+      <tr><td>纯销售实绩（千元）</td></tr>
+      <tr><td>纯销售达成率</td></tr>
+      <tr class="pl"><td>生产量计划（千个）</td></tr>
+      <tr><td>生产量实绩（千个）</td></tr>
+      <tr><td>生产量达成率</td></tr>
+      <tr><td>交期遵守率</td></tr>
+    </tbody>
+  </table></div>
+  <div class="g2">
+    <div class="cc"><div class="ct">销售额达成率（%）</div><canvas id="c-sr"></canvas></div>
+    <div class="cc"><div class="ct">生产量达成率（%）</div><canvas id="c-prr"></canvas></div>
+  </div>
+  <div class="g2" style="margin-top:10px">
+    <div class="cc"><div class="ct">销售额 vs 纯销售（千元）</div><canvas id="c-sabs"></canvas></div>
+    <div class="cc"><div class="ct">纯销售占销售额比重（%）</div><canvas id="c-nrt"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══ 采购与TCR ═══ -->
+<div class="pane" id="tab-purch">
+  <div class="kr">
+    <div class="kc" style="--ac:var(--blue)"><div class="ki">📦</div><div class="kl">包材采购 全年合计</div><div class="kv" id="kv-pkg2">—</div><div class="ks" id="ks-pkg2">—</div><span class="bx b">全年汇总</span></div>
+    <div class="kc" style="--ac:var(--grn)"><div class="ki">✅</div><div class="kl">供应商品质达成率 年均</div><div class="kv" id="kv-qual">—</div><div class="ks">全年月均</div><span class="bx g">▲ 稳定</span></div>
+    <div class="kc" style="--ac:var(--teal)"><div class="ki">⏰</div><div class="kl">供应商交期遵守率 年均</div><div class="kv" id="kv-supd2">—</div><div class="ks">全年月均</div><span class="bx g">▲ 优秀</span></div>
+    <div class="kc" style="--ac:var(--blue)"><div class="ki">💹</div><div class="kl">TCR 净实绩 全年</div><div class="kv" id="kv-tcr2">—</div><div class="ks" id="ks-tcr2">—</div><span class="bx" id="kb-tcr2">—</span></div>
+    <div class="kc" style="--ac:var(--teal)"><div class="ki">📦</div><div class="kl">包材 TCR 净实绩</div><div class="kv" id="kv-ptcr">—</div><div class="ks" id="ks-ptcr">—</div><span class="bx" id="kb-ptcr">—</span></div>
+    <div class="kc" style="--ac:var(--pur)"><div class="ki">🧪</div><div class="kl">原料 TCR 净实绩</div><div class="kv" id="kv-rtcr">—</div><div class="ks" id="ks-rtcr">—</div><span class="bx" id="kb-rtcr">—</span></div>
+  </div>
+  <div class="g2" style="margin-top:14px">
+    <div class="cc"><div class="ct">TCR 降价 vs 涨价 月度（千元）</div><canvas id="c-tcrt"></canvas></div>
+    <div class="cc"><div class="ct">包材 / 原料 TCR 构成</div><canvas id="c-tcrp"></canvas></div>
+  </div>
+  <div class="sec"><b>TCR</b> 月度明细</div>
+  <div class="tw"><table id="T-tcr">
+    <thead><tr><th>指标</th><th>1月</th><th>2月</th><th>3月</th><th>4月</th><th>5月</th><th>6月</th><th>7月</th><th>8月</th><th>9月</th><th>10月</th><th>11月</th><th>12月</th><th>全年</th></tr></thead>
+    <tbody>
+      <tr class="pl"><td>TCR 目标（千元）</td></tr>
+      <tr><td>降价（千元）</td></tr>
+      <tr><td>涨价（千元）</td></tr>
+      <tr><td>净实绩（千元）</td></tr>
+      <tr><td>达成率（%）</td></tr>
+      <tr class="pl"><td>包材TCR 目标</td></tr>
+      <tr><td>包材TCR 实绩</td></tr>
+      <tr class="pl"><td>原料TCR 目标</td></tr>
+      <tr><td>原料TCR 实绩</td></tr>
+    </tbody>
+  </table></div>
+  <div class="sec"><b>包材</b> 月度采购明细</div>
+  <div class="tw"><table id="T-pkg">
+    <thead><tr><th>指标</th><th>1月</th><th>2月</th><th>3月</th><th>4月</th><th>5月</th><th>6月</th><th>7月</th><th>8月</th><th>9月</th><th>10月</th><th>11月</th><th>12月</th><th>全年/均</th></tr></thead>
+    <tbody>
+      <tr><td>采购金额（千元）</td></tr>
+      <tr><td>占销售额比重（%）</td></tr>
+      <tr><td>供应商品质达成率（%）</td></tr>
+      <tr><td>供应商交期遵守率（%）</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- ═══ 库存管理 ═══ -->
+<div class="pane" id="tab-inv">
+  <div class="kr">
+    <div class="kc" style="--ac:var(--grn)"><div class="ki">✅</div><div class="kl">正常库存 12月末</div><div class="kv" id="kv-n12">—</div><div class="ks" id="ks-n12">—</div><span class="bx g">持续健康</span></div>
+    <div class="kc" style="--ac:var(--amb)"><div class="ki">⚠️</div><div class="kl">不进库存 12月末</div><div class="kv" id="kv-s12">—</div><div class="ks" id="ks-s12">—</div><span class="bx a">持续关注</span></div>
+    <div class="kc" style="--ac:var(--red)"><div class="ki">🚨</div><div class="kl">不动库存 12月末</div><div class="kv" id="kv-d12">—</div><div class="ks" id="ks-d12">—</div><span class="bx" id="kb-d12">—</span></div>
+    <div class="kc" style="--ac:var(--blue)"><div class="ki">📊</div><div class="kl">不进不动 12月末比重</div><div class="kv" id="kv-b12">—</div><div class="ks" id="ks-b12">—</div><span class="bx" id="kb-b12">—</span></div>
+  </div>
+  <div class="sec"><b>月度</b> 库存趋势</div>
+  <div class="g2">
+    <div class="cc"><div class="ct">不进不动比重 月度（%）</div><canvas id="c-ir"></canvas></div>
+    <div class="cc"><div class="ct">不进 / 不动 金额趋势（千元）</div><canvas id="c-ia"></canvas></div>
+  </div>
+  <div class="sec"><b>库存</b> 月度明细</div>
+  <div class="tw"><table id="T-inv">
+    <thead><tr><th>指标</th><th>1月</th><th>2月</th><th>3月</th><th>4月</th><th>5月</th><th>6月</th><th>7月</th><th>8月</th><th>9月</th><th>10月</th><th>11月</th><th>12月</th></tr></thead>
+    <tbody>
+      <tr><td>正常库存（千元）</td></tr>
+      <tr><td>不进库存（千元）</td></tr>
+      <tr><td>不动库存（千元）</td></tr>
+      <tr class="pl"><td>不进不动合计（千元）</td></tr>
+      <tr><td>不进不动比重（%）</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- ═══ 交期与品质 ═══ -->
+<div class="pane" id="tab-del">
+  <div class="kr">
+    <div class="kc" style="--ac:var(--grn)"><div class="ki">✅</div><div class="kl">交期遵守率 年均</div><div class="kv" id="kv-del">—</div><div class="ks">（交货给生产）</div><span class="bx g">▲ 优秀</span></div>
+    <div class="kc" style="--ac:var(--grn)"><div class="ki">🔍</div><div class="kl">供应商品质达成率 年均</div><div class="kv" id="kv-qual2">—</div><div class="ks">全年月均</div><span class="bx g">▲ 稳定</span></div>
+    <div class="kc" style="--ac:var(--teal)"><div class="ki">⏰</div><div class="kl">供应商交期遵守率 年均</div><div class="kv" id="kv-supd3">—</div><div class="ks">全年月均</div><span class="bx g">▲ 优秀</span></div>
+  </div>
+  <div class="g2" style="margin-top:18px">
+    <div class="cc"><div class="ct">供应商品质 vs 交期遵守率（%）</div><canvas id="c-sq"></canvas></div>
+    <div class="cc"><div class="ct">交期遵守率 月度（%）</div><canvas id="c-delm"></canvas></div>
+  </div>
+  <div class="sec"><b>交期·品质</b> 月度明细</div>
+  <div class="tw"><table id="T-del">
+    <thead><tr><th>指标</th><th>1月</th><th>2月</th><th>3月</th><th>4月</th><th>5月</th><th>6月</th><th>7月</th><th>8月</th><th>9月</th><th>10月</th><th>11月</th><th>12月</th><th>年均</th></tr></thead>
+    <tbody>
+      <tr><td>交期遵守率（%）</td></tr>
+      <tr><td>供应商品质达成率（%）</td></tr>
+      <tr><td>供应商交期遵守率（%）</td></tr>
+    </tbody>
+  </table></div><!-- /w -->
+<script>
+// ═══ DATA - 严格来自 YSGB 及 SCM_23年 表 ═══
+var D={
+  SP: [18000,14000,34000,38000,38000,33300,29500,25900,33300,37000,35000,34000],
+  SA: [29535,18975,25295,21325,29956,29947,27456,38697,44875,59101,32198,22801],
+  NP: [8000,6000,11000,12200,13000,10800,11450,10500,15000,15000,14050,14000],
+  NA: [11703,6881,9809,8955,12513,12946,11379,16639,18543,25927,13839,10692],
+  PP: [2272,1767,4291,4796,4796,4203,3723,3269,4203,4670,4418,4292],
+  PA: [3601,2780,3783,3442,4420,4640,3308,7292,9219,10735,6222,3444],
+  DEL:[0.95,0.90,0.92,0.97,1.00,1.00,0.97,1.00,1.00,1.00,1.00,1.00],
+  // 包材采购
+  PKG:[21347,22100,19600,16423,14497,8743,19214,27748,22444,13049,6637,16460],
+  QUAL:[95.57,98.34,96.80,96.80,96.80,98.23,98.35,98.11,97.34,98.52,98.90,98.41],
+  SUPD:[99.69,99.87,99.67,99.67,99.67,99.83,99.75,99.77,99.61,99.52,99.69,99.68],
+  // TCR
+  TCR_T:[300,300,300,300,300,300,300,300,300,300,300,300],
+  TCR_DN:[130,134,248,154,168,201,208,262,276,256,189,216],
+  TCR_UP:[-3,-4,-10,-22,-25,-94,-30,-82,-75,-49,-34,-31],
+  PT:[180,180,180,180,180,180,180,180,180,180,180,180],
+  PA2:[122,121,204,58,90,27,49,42,62,75,49,64],
+  RT:[120,120,120,120,120,120,120,120,120,120,120,120],
+  RA:[5,9,34,74,52,80,129,138,139,132,106,121],
+  // 库存
+  IN:[1837,2072,1862,2369,2364,2273,2216,2622,3548,2208,2465,2319],
+  IS:[275,353,317,283,354,395,339,196,201,217,229,235],
+  ID:[893,920,895,852,962,900,862,963,626,576,459,362],
+};
+var MO=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+var CH={};
+
+// ═══ HELPERS ═══
+function S(a){return a.reduce(function(s,v){return s+(v||0);},0);}
+function A(a){var b=a.filter(function(x){return x!=null&&!isNaN(x);});return b.length?S(b)/b.length:0;}
+function A12(v){return Array(12).fill(v);}
+function fmt(v,d){if(v==null||isNaN(v))return'—';return(+v).toLocaleString('zh-CN',{maximumFractionDigits:d||0,minimumFractionDigits:d||0});}
+function pc(v){return v>=100?'var(--grn)':v>=80?'var(--amb)':'var(--red)';}
+function bc(a){return a.map(function(v){return v>=100?'rgba(13,143,90,.75)':v>=80?'rgba(217,123,0,.75)':'rgba(212,24,42,.75)';});}
+function st(id,t,c){var e=document.getElementById(id);if(!e)return;e.textContent=t;if(c)e.style.color=c;}
+function sh(id,t){var e=document.getElementById(id);if(!e)return;e.innerHTML=t;}
+
+// ═══ CHART INIT ═══
+Chart.defaults.color='#6b7a99';
+Chart.defaults.borderColor='rgba(100,120,170,.12)';
+Chart.defaults.font.family="'Microsoft YaHei','微软雅黑',sans-serif";
+Chart.defaults.font.size=12;
+var TT={backgroundColor:'#fff',borderColor:'rgba(100,120,170,.2)',borderWidth:1,titleColor:'#0f1c3f',bodyColor:'#6b7a99',padding:9,cornerRadius:7};
+function scP(mn,mx){return{y:{min:mn,max:mx,grid:{color:'rgba(100,120,170,.08)'},ticks:{callback:function(v){return v+'%';}}},x:{grid:{display:false}}};}
+function scK(){return{y:{grid:{color:'rgba(100,120,170,.08)'},ticks:{callback:function(v){return v>=1000?(v/1000).toFixed(0)+'K':v;}}},x:{grid:{display:false}}};}
+function scN(){return{y:{grid:{color:'rgba(100,120,170,.08)'}},x:{grid:{display:false}}};}
+function mkC(id,type,ds,sc){
+  var el=document.getElementById(id);if(!el)return;
+  CH[id]=new Chart(el,{type:type,data:{labels:MO,datasets:ds},
+    options:{responsive:true,maintainAspectRatio:true,animation:{duration:300},
+      plugins:{legend:{labels:{color:'#6b7a99',boxWidth:10,padding:11}},tooltip:TT},
+      scales:sc||scN()}});
+}
+function upC(id,ds){if(!CH[id])return;CH[id].data.datasets=ds;CH[id].update();}
+
+// ═══ EDITABLE TABLE BUILDER ═══
+// rows: [{key,edit,fmt}|{computed,fmt}]  ncols=12  hasMon=bool
+function buildT(tid,rowDefs,ncols,hasMon){
+  var tbody=document.querySelector('#'+tid+' tbody');
+  var trs=tbody.querySelectorAll('tr');
+  rowDefs.forEach(function(def,ri){
+    var tr=trs[ri];
+    var cols=ncols||12;
+    for(var i=0;i<cols;i++){
+      var td=document.createElement('td');
+      if(def.edit&&def.key){
+        var sp=document.createElement('span');
+        sp.className='ev';sp.contentEditable='true';
+        sp.dataset.key=def.key;sp.dataset.idx=i;sp.dataset.fmt=def.fmt||'num';
+        sp.textContent=fv(D[def.key][i],def.fmt||'num');
+        sp.addEventListener('blur',onBlur);
+        sp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();this.blur();}});
+        td.appendChild(sp);
+      } else {
+        var sp2=document.createElement('span');
+        sp2.className='cv';sp2.id=tid+'-r'+ri+'-c'+i;
+        td.appendChild(sp2);
+      }
+      tr.appendChild(td);
+    }
+    // total col
+    var tdT=document.createElement('td');
+    var spT=document.createElement('span');spT.className='cv';spT.id=tid+'-r'+ri+'-tot';
+    tdT.appendChild(spT);tr.appendChild(tdT);
+    // avg col (optional)
+    if(hasMon){
+      var tdA=document.createElement('td');
+      var spA=document.createElement('span');spA.className='cv';spA.id=tid+'-r'+ri+'-avg';
+      tdA.appendChild(spA);tr.appendChild(tdA);
+    }
+  });
+}
+function fv(v,f){
+  if(v==null)return'—';
+  if(f==='pct')return(+v).toFixed(1)+'%';
+  return fmt(v,0);
+}
+function onBlur(){
+  var k=this.dataset.key,i=parseInt(this.dataset.idx),f=this.dataset.fmt;
+  var raw=this.textContent.trim().replace(/,/g,'').replace(/%/g,'');
+  var v=parseFloat(raw);
+  if(isNaN(v)){this.textContent=fv(D[k][i],f);return;}
+  D[k][i]=v;this.textContent=fv(v,f);
+  var td=this.parentElement;td.classList.remove('fld');void td.offsetWidth;td.classList.add('fld');
+  refreshAll();
+}
+function setC(tid,ri,vals,f,cf){
+  for(var i=0;i<12;i++){
+    var el=document.getElementById(tid+'-r'+ri+'-c'+i);if(!el)continue;
+    var v=vals[i];el.textContent=fv(v,f);
+    el.className='cv';
+    if(cf&&v!=null){var c=cf(v);if(c)el.classList.add(c);}
+  }
+}
+function setT(tid,ri,v,f){var e=document.getElementById(tid+'-r'+ri+'-tot');if(e)e.textContent=v!=null?fv(v,f):'—';}
+function setAv(tid,ri,v,f){var e=document.getElementById(tid+'-r'+ri+'-avg');if(e)e.textContent=v!=null?fv(v,f):'—';}
+function refEd(tid,ri,key,f){
+  var tr=document.querySelector('#'+tid+' tbody tr:nth-child('+(ri+1)+')');if(!tr)return;
+  var ss=tr.querySelectorAll('.ev');
+  for(var i=0;i<ss.length;i++){if(document.activeElement!==ss[i])ss[i].textContent=fv(D[key][i],f);}
+  setT(tid,ri,(f==='pct')?null:S(D[key]),f);
+}
+function refEdPct(tid,ri,key){
+  var tr=document.querySelector('#'+tid+' tbody tr:nth-child('+(ri+1)+')');if(!tr)return;
+  var ss=tr.querySelectorAll('.ev');
+  for(var i=0;i<ss.length;i++){if(document.activeElement!==ss[i])ss[i].textContent=fv(D[key][i],'pct');}
+  setT(tid,ri,A(D[key]),'pct');
+}
+
+// ═══ MAIN REFRESH ═══
+function refreshAll(){
+  var SR=D.SA.map(function(v,i){return D.SP[i]?v/D.SP[i]*100:0;});
+  var NR=D.NA.map(function(v,i){return D.NP[i]?v/D.NP[i]*100:0;});
+  var PR=D.PA.map(function(v,i){return D.PP[i]?v/D.PP[i]*100:0;});
+  var NRT=D.NA.map(function(v,i){return D.SA[i]?v/D.SA[i]*100:0;});
+  var DELP=D.DEL.map(function(v){return v*100;});
+  var TNET=D.TCR_DN.map(function(v,i){return v+D.TCR_UP[i];});
+  var TRATE=TNET.map(function(v,i){return D.TCR_T[i]?v/D.TCR_T[i]*100:0;});
+  var PKGR=D.PKG.map(function(v,i){return D.SA[i]?v/D.SA[i]*100:0;});
+  var QUALP=D.QUAL.slice();
+  var SUPDP=D.SUPD.slice();
+  var IB=D.IS.map(function(v,i){return v+D.ID[i];});
+  var IT=D.IN.map(function(v,i){return v+IB[i];});
+  var IR=IB.map(function(v,i){return IT[i]?v/IT[i]*100:0;});
+
+  var tSP=S(D.SP),tSA=S(D.SA),tNP=S(D.NP),tNA=S(D.NA),tPP=S(D.PP),tPA=S(D.PA);
+  var tSR=tSP?tSA/tSP*100:0,tNR=tNP?tNA/tNP*100:0,tPR=tPP?tPA/tPP*100:0;
+  var tTCR=S(TNET),tTt=S(D.TCR_T),tTrate=tTt?tTCR/tTt*100:0;
+  var tPKG=S(D.PKG),tPa=S(D.PA2),tRa=S(D.RA),tPt=S(D.PT),tRt=S(D.RT);
+  var aSUPD=A(SUPDP),aQUAL=A(QUALP),aDEL=A(DELP);
+  var ptR=tPt?tPa/tPt*100:0,rtR=tRt?tRa/tRt*100:0;
+
+  // RIBBON
+  st('r-sp',fmt(tSP,0)+' 千元');st('r-sa',fmt(tSA,0)+' 千元',tSA>=tSP?'var(--grn)':'var(--amb)');
+  st('r-sr',tSR.toFixed(1)+'%',pc(tSR));st('r-nr',tNR.toFixed(1)+'%',pc(tNR));
+  st('r-pr',tPR.toFixed(1)+'%');st('r-tcr',fmt(tTCR,0)+' 千元');st('r-pkg',fmt(tPKG,0)+' 千元');
+
+  // OV KPIs
+  sh('kv-sa',fmt(tSA,0)+' <small>千元</small>');st('ks-sa','计划 '+fmt(tSP,0)+' · 月均 '+fmt(tSA/12,0));
+  var b1=document.getElementById('kb-sr');b1.textContent=(tSR>=100?'▲':'▼')+' '+tSR.toFixed(1)+'%';b1.className='bx '+(tSR>=100?'g':'r');
+  sh('kv-na',fmt(tNA,0)+' <small>千元</small>');st('ks-na','计划 '+fmt(tNP,0)+' · 月均 '+fmt(tNA/12,0));
+  var b2=document.getElementById('kb-nr');b2.textContent=(tNR>=100?'▲':'▼')+' '+tNR.toFixed(1)+'%';b2.className='bx '+(tNR>=100?'g':'r');
+  sh('kv-pa',fmt(tPA,0)+' <small>千个</small>');st('ks-pa','计划 '+fmt(tPP,0)+' · 月均 '+fmt(tPA/12,0));
+  var b3=document.getElementById('kb-pr');b3.textContent=(tPR>=100?'▲':'▼')+' '+tPR.toFixed(1)+'%';b3.className='bx '+(tPR>=100?'g':'r');
+  sh('kv-pkg',fmt(tPKG,0)+' <small>千元</small>');st('ks-pkg','占销售额 '+(tSA?tPKG/tSA*100:0).toFixed(1)+'%');
+  sh('kv-supd',aSUPD.toFixed(1)+' <small>%</small>');
+  sh('kv-tcr',fmt(tTCR,0)+' <small>千元</small>');st('ks-tcr','目标 '+fmt(tTt,0)+' · 达成 '+tTrate.toFixed(1)+'%');
+  var b4=document.getElementById('kb-tcr');b4.textContent=(tTrate>=100?'▲':'▼')+' '+tTrate.toFixed(1)+'%';b4.className='bx '+(tTrate>=100?'g':'r');
+  var ob=document.getElementById('ov-badge');ob.textContent='全年达成 '+tSR.toFixed(1)+'%';ob.className='bx '+(tSR>=100?'g':'a');
+
+  // SALES dynamic KPIs
+  var hiI=0,loI=0,nhiI=0,phiI=0;
+  for(var i=1;i<12;i++){if(SR[i]>SR[hiI])hiI=i;if(SR[i]<SR[loI])loI=i;if(NR[i]>NR[nhiI])nhiI=i;if(PR[i]>PR[phiI])phiI=i;}
+  st('km-hi',MO[hiI]);st('ks-hi','实绩 '+fmt(D.SA[hiI],0)+' / 计划 '+fmt(D.SP[hiI],0));document.getElementById('kb-hi').textContent='▲ '+SR[hiI].toFixed(1)+'%';
+  st('km-lo',MO[loI]);st('ks-lo','实绩 '+fmt(D.SA[loI],0)+' / 计划 '+fmt(D.SP[loI],0));document.getElementById('kb-lo').textContent='▼ '+SR[loI].toFixed(1)+'%';
+  st('km-nhi',MO[nhiI]);st('ks-nhi','实绩 '+fmt(D.NA[nhiI],0)+' / 计划 '+fmt(D.NP[nhiI],0));document.getElementById('kb-nhi').textContent='▲ '+NR[nhiI].toFixed(1)+'%';
+  st('km-phi',MO[phiI]);st('ks-phi','实绩 '+fmt(D.PA[phiI],0)+' / 计划 '+fmt(D.PP[phiI],0));document.getElementById('kb-phi').textContent='▲ '+PR[phiI].toFixed(1)+'%';
+
+  // ── SALES TABLE ──
+  refEd('T-sales',0,'SP','num');setAv('T-sales',0,tSP/12,'num');
+  refEd('T-sales',1,'SA','num');setAv('T-sales',1,tSA/12,'num');
+  setC('T-sales',2,SR,'pct',function(v){return v>=100?'G':v>=80?'A':'R';});setT('T-sales',2,null);setAv('T-sales',2,null);
+  refEd('T-sales',3,'NP','num');setAv('T-sales',3,tNP/12,'num');
+  refEd('T-sales',4,'NA','num');setAv('T-sales',4,tNA/12,'num');
+  setC('T-sales',5,NR,'pct',function(v){return v>=100?'G':v>=80?'A':'R';});setT('T-sales',5,null);setAv('T-sales',5,null);
+  refEd('T-sales',6,'PP','num');setAv('T-sales',6,tPP/12,'num');
+  refEd('T-sales',7,'PA','num');setAv('T-sales',7,tPA/12,'num');
+  setC('T-sales',8,PR,'pct',function(v){return v>=100?'G':v>=80?'A':'R';});setT('T-sales',8,null);setAv('T-sales',8,null);
+  refEdPct('T-sales',9,'DEL');setT('T-sales',9,null);setAv('T-sales',9,aDEL,'pct');
+
+  // ── TCR TABLE ──
+  refEd('T-tcr',0,'TCR_T','num');
+  refEd('T-tcr',1,'TCR_DN','num');
+  refEd('T-tcr',2,'TCR_UP','num');
+  setC('T-tcr',3,TNET,'num',null);setT('T-tcr',3,tTCR,'num');
+  setC('T-tcr',4,TRATE,'pct',function(v){return v>=100?'G':v>=80?'A':'R';});setT('T-tcr',4,null);
+  refEd('T-tcr',5,'PT','num');
+  refEd('T-tcr',6,'PA2','num');
+  refEd('T-tcr',7,'RT','num');
+  refEd('T-tcr',8,'RA','num');
+
+  // ── PKG TABLE ──
+  refEd('T-pkg',0,'PKG','num');
+  setC('T-pkg',1,PKGR,'pct',null);setT('T-pkg',1,null);
+  refEdPct('T-pkg',2,'QUAL');setT('T-pkg',2,aQUAL,'pct');
+  refEdPct('T-pkg',3,'SUPD');setT('T-pkg',3,aSUPD,'pct');
+
+  // PURCH KPIs
+  sh('kv-pkg2',fmt(tPKG,0)+' <small>千元</small>');st('ks-pkg2','月均 '+fmt(tPKG/12,0)+' 千元');
+  sh('kv-qual',aQUAL.toFixed(1)+' <small>%</small>');
+  sh('kv-supd2',aSUPD.toFixed(1)+' <small>%</small>');
+  sh('kv-tcr2',fmt(tTCR,0)+' <small>千元</small>');st('ks-tcr2','降价 '+fmt(S(D.TCR_DN),0)+' + 涨价 '+fmt(S(D.TCR_UP),0));
+  var b5=document.getElementById('kb-tcr2');b5.textContent=(tTrate>=100?'▲':'▼')+' 达成 '+tTrate.toFixed(1)+'%';b5.className='bx '+(tTrate>=100?'g':'r');
+  sh('kv-ptcr',fmt(tPa,0)+' <small>千元</small>');st('ks-ptcr','目标 '+fmt(tPt,0));
+  var bp=document.getElementById('kb-ptcr');bp.textContent='达成 '+ptR.toFixed(1)+'%';bp.className='bx '+(ptR>=100?'g':ptR>=80?'a':'r');
+  sh('kv-rtcr',fmt(tRa,0)+' <small>千元</small>');st('ks-rtcr','目标 '+fmt(tRt,0));
+  var br=document.getElementById('kb-rtcr');br.textContent='达成 '+rtR.toFixed(1)+'%';br.className='bx '+(rtR>=100?'g':rtR>=80?'a':'r');
+
+  // ── INV TABLE ──
+  refEd('T-inv',0,'IN','num');
+  refEd('T-inv',1,'IS','num');
+  refEd('T-inv',2,'ID','num');
+  setC('T-inv',3,IB,'num',null);setT('T-inv',3,null);
+  setC('T-inv',4,IR,'pct',function(v){return v>=35?'R':v>=25?'A':'G';});setT('T-inv',4,null);
+
+  // INV KPIs
+  var n12=D.IN[11],s12=D.IS[11],d12=D.ID[11],b12=s12+d12,t12=n12+b12;
+  var n1=D.IN[0],s1=D.IS[0],d1=D.ID[0],b1v=s1+d1,t1v=n1+b1v;
+  var r12=t12?b12/t12*100:0,r1=t1v?b1v/t1v*100:0,dchg=d1?(d12-d1)/d1*100:0;
+  sh('kv-n12',fmt(n12,0)+' <small>千元</small>');st('ks-n12','较年初 '+fmt(n1,0)+(n12>n1?' ↑':' ↓')+Math.abs(n12-n1).toFixed(0));
+  sh('kv-s12',fmt(s12,0)+' <small>千元</small>');st('ks-s12','年初 '+fmt(s1,0)+' 千元');
+  sh('kv-d12',fmt(d12,0)+' <small>千元</small>');st('ks-d12','年初 '+fmt(d1,0)+' · 变化 '+(dchg>0?'+':'')+dchg.toFixed(1)+'%');
+  var bd=document.getElementById('kb-d12');bd.textContent=(dchg<0?'▼ 削减 '+Math.abs(dchg).toFixed(1)+'%':'▲ 增加 '+dchg.toFixed(1)+'%');bd.className='bx '+(dchg<0?'g':'r');
+  sh('kv-b12',r12.toFixed(1)+' <small>%</small>');st('ks-b12','合计 '+fmt(b12,0)+' 千元（年初 '+r1.toFixed(1)+'%）');
+  var bb=document.getElementById('kb-b12');var rchg=r1-r12;bb.textContent=(rchg>0?'▼ 改善 '+rchg.toFixed(1)+'pp':'▲ 恶化 '+Math.abs(rchg).toFixed(1)+'pp');bb.className='bx '+(rchg>0?'g':'r');
+
+  // ── DEL TABLE ──
+  refEdPct('T-del',0,'DEL');setT('T-del',0,aDEL,'pct');
+  refEdPct('T-del',1,'QUAL');setT('T-del',1,aQUAL,'pct');
+  refEdPct('T-del',2,'SUPD');setT('T-del',2,aSUPD,'pct');
+
+  // HIST TABLE (2023 read-only data)
+  // DEL KPIs
+  sh('kv-del',(aDEL).toFixed(1)+' <small>%</small>');
+  sh('kv-qual2',aQUAL.toFixed(1)+' <small>%</small>');
+  sh('kv-supd3',aSUPD.toFixed(1)+' <small>%</small>');
+
+  // ══ UPDATE CHARTS ══
+  upC('c-sm',[
+    {label:'计划',data:D.SP.slice(),backgroundColor:'rgba(26,92,255,.12)',borderColor:'rgba(26,92,255,.4)',borderWidth:1,borderRadius:4},
+    {label:'实绩',data:D.SA.slice(),backgroundColor:D.SA.map(function(v,i){return v>=D.SP[i]?'rgba(13,143,90,.7)':'rgba(217,123,0,.7)';}),borderWidth:1,borderRadius:4}
+  ]);
+  upC('c-ar',[
+    {label:'销售额达成',data:SR,borderColor:'#1a5cff',backgroundColor:'rgba(26,92,255,.07)',borderWidth:2,pointRadius:4,tension:.35,fill:true},
+    {label:'纯销售达成',data:NR,borderColor:'#009680',borderWidth:2,pointRadius:4,tension:.35},
+    {label:'100%',data:A12(100),borderColor:'rgba(212,24,42,.4)',borderDash:[5,3],borderWidth:1.5,pointRadius:0}
+  ]);
+  upC('c-pm',[
+    {label:'计划',data:D.PP.slice(),backgroundColor:'rgba(98,54,224,.12)',borderColor:'rgba(98,54,224,.4)',borderWidth:1,borderRadius:4},
+    {label:'实绩',data:D.PA.slice(),backgroundColor:D.PA.map(function(v,i){return v>=D.PP[i]?'rgba(13,143,90,.7)':'rgba(217,123,0,.7)';}),borderWidth:1,borderRadius:4}
+  ]);
+  upC('c-io',[
+    {label:'不进不动比重',data:IR,borderColor:'#d97b00',backgroundColor:'rgba(217,123,0,.1)',borderWidth:2.5,pointRadius:4,tension:.35,fill:true},
+    {label:'目标20%',data:A12(20),borderColor:'rgba(13,143,90,.5)',borderDash:[5,3],borderWidth:1.5,pointRadius:0}
+  ]);
+  upC('c-sr',[
+    {label:'销售额达成率',data:SR,backgroundColor:bc(SR),borderRadius:5,borderWidth:0},
+    {label:'100%',data:A12(100),type:'line',borderColor:'rgba(212,24,42,.6)',borderDash:[5,3],borderWidth:2,pointRadius:0}
+  ]);
+  upC('c-prr',[
+    {label:'生产量达成率',data:PR,backgroundColor:bc(PR),borderRadius:5,borderWidth:0},
+    {label:'100%',data:A12(100),type:'line',borderColor:'rgba(212,24,42,.6)',borderDash:[5,3],borderWidth:2,pointRadius:0}
+  ]);
+  upC('c-sabs',[
+    {label:'销售额',data:D.SA.slice(),backgroundColor:'rgba(26,92,255,.65)',borderRadius:4},
+    {label:'纯销售',data:D.NA.slice(),backgroundColor:'rgba(0,150,128,.65)',borderRadius:4}
+  ]);
+  upC('c-nrt',[{label:'纯销售/销售额',data:NRT,borderColor:'#6236e0',backgroundColor:'rgba(98,54,224,.08)',borderWidth:2.5,pointRadius:4,tension:.35,fill:true}]);
+  upC('c-tcrt',[
+    {label:'降价',data:D.TCR_DN.slice(),backgroundColor:'rgba(13,143,90,.7)',borderRadius:4},
+    {label:'涨价',data:D.TCR_UP.slice(),backgroundColor:'rgba(212,24,42,.6)',borderRadius:4},
+    {label:'净实绩',data:TNET,type:'line',borderColor:'#1a5cff',borderWidth:2.5,pointRadius:5,tension:.3}
+  ]);
+  CH['c-tcrp'].data.datasets[0].data=[S(D.PA2),Math.abs(S(D.TCR_UP))*0.4,S(D.RA),Math.abs(S(D.TCR_UP))*0.6];
+  CH['c-tcrp'].update();
+  upC('c-ir',[
+    {label:'不进不动比重',data:IR,borderColor:'#d97b00',backgroundColor:'rgba(217,123,0,.1)',borderWidth:2.5,pointRadius:5,tension:.35,fill:true},
+    {label:'目标20%',data:A12(20),borderColor:'rgba(13,143,90,.5)',borderDash:[5,3],borderWidth:1.5,pointRadius:0}
+  ]);
+  upC('c-ia',[
+    {label:'不进',data:D.IS.slice(),borderColor:'#d97b00',borderWidth:2,pointRadius:4,tension:.3},
+    {label:'不动',data:D.ID.slice(),borderColor:'#d4182a',borderWidth:2,pointRadius:4,tension:.3},
+    {label:'正常',data:D.IN.slice(),borderColor:'rgba(13,143,90,.7)',borderWidth:1.5,borderDash:[4,3],pointRadius:3,tension:.3}
+  ]);
+  upC('c-sq',[
+    {label:'供应商品质(%)',data:QUALP,borderColor:'#0d8f5a',borderWidth:2,pointRadius:3,tension:.3},
+    {label:'供应商交期(%)',data:SUPDP,borderColor:'#1a5cff',borderWidth:2,pointRadius:3,tension:.3}
+  ]);
+  upC('c-delm',[
+    {label:'交期遵守率(%)',data:DELP,borderColor:'#6236e0',backgroundColor:'rgba(98,54,224,.08)',borderWidth:2.5,pointRadius:5,tension:.3,fill:true},
+    {label:'目标95%',data:A12(95),borderColor:'rgba(13,143,90,.5)',borderDash:[5,3],borderWidth:1.5,pointRadius:0}
+  ]);
+}
+
+// ═══ TAB ═══
+function showTab(id,btn){
+  document.querySelectorAll('.tb').forEach(function(t){t.classList.remove('on');});
+  document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('on');});
+  btn.classList.add('on');document.getElementById('tab-'+id).classList.add('on');
+}
+
+// ═══ INIT ═══
+buildT('T-sales',[
+  {key:'SP',edit:true,fmt:'num'},{key:'SA',edit:true,fmt:'num'},{computed:true},
+  {key:'NP',edit:true,fmt:'num'},{key:'NA',edit:true,fmt:'num'},{computed:true},
+  {key:'PP',edit:true,fmt:'num'},{key:'PA',edit:true,fmt:'num'},{computed:true},
+  {key:'DEL',edit:true,fmt:'pct'}
+],12,true);
+
+buildT('T-tcr',[
+  {key:'TCR_T',edit:true,fmt:'num'},{key:'TCR_DN',edit:true,fmt:'num'},{key:'TCR_UP',edit:true,fmt:'num'},
+  {computed:true},{computed:true},
+  {key:'PT',edit:true,fmt:'num'},{key:'PA2',edit:true,fmt:'num'},
+  {key:'RT',edit:true,fmt:'num'},{key:'RA',edit:true,fmt:'num'}
+],12,false);
+
+buildT('T-pkg',[
+  {key:'PKG',edit:true,fmt:'num'},{computed:true},
+  {key:'QUAL',edit:true,fmt:'pct'},{key:'SUPD',edit:true,fmt:'pct'}
+],12,false);
+
+buildT('T-inv',[
+  {key:'IN',edit:true,fmt:'num'},{key:'IS',edit:true,fmt:'num'},{key:'ID',edit:true,fmt:'num'},
+  {computed:true},{computed:true}
+],12,false);
+
+buildT('T-del',[
+  {key:'DEL',edit:true,fmt:'pct'},{key:'QUAL',edit:true,fmt:'pct'},{key:'SUPD',edit:true,fmt:'pct'}
+],12,false);
+
+// Init all charts
+mkC('c-sm','bar',[],scK());mkC('c-ar','line',[],scP(40,185));
+mkC('c-pm','bar',[],scN());mkC('c-io','line',[],scP(0,45));
+mkC('c-sr','bar',[],scP(40,190));mkC('c-prr','bar',[],scP(40,250));
+mkC('c-sabs','bar',[],scK());mkC('c-nrt','line',[],scP(20,65));
+mkC('c-tcrt','bar',[],scN());
+CH['c-tcrp']=new Chart(document.getElementById('c-tcrp'),{
+  type:'doughnut',data:{labels:['包材TCR降价','TCR涨价(包)','原料TCR降价','TCR涨价(料)'],
+    datasets:[{data:[0,0,0,0],backgroundColor:['rgba(0,150,128,.8)','rgba(212,24,42,.7)','rgba(98,54,224,.8)','rgba(217,123,0,.7)'],borderColor:'#f0f4fb',borderWidth:3,hoverOffset:8}]},
+  options:{responsive:true,maintainAspectRatio:true,animation:{duration:300},cutout:'62%',
+    plugins:{legend:{position:'bottom',labels:{color:'#6b7a99',padding:11,boxWidth:10}},tooltip:TT}}
+});
+mkC('c-ir','line',[],scP(0,45));mkC('c-ia','line',[],scN());
+mkC('c-sq','line',[],scP(93,101));mkC('c-delm','line',[],scP(80,105));
+
+refreshAll();
+</script></body></html>
